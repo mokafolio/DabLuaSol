@@ -27,8 +27,10 @@ if get_option('buildSubmodules') == false
     dabLuaDeps = [stickDep, dependency('threads'), dabDep]
 else
     stickProj = subproject('Stick')
+    stickLuaProj = subproject('StickLuaSol')
     dabProj = subproject('Dab')
-    dabLuaDeps = [stickProj.get_variable('stickDep'), dabProj.get_variable('dabDep')]
+    dabLuaDeps = [stickProj.get_variable('stickDep'), dabProj.get_variable('dabDep'),
+    stickLuaProj.get_variable('stickLuaDep')]
 endif
 
 if host_machine.system() == 'linux'

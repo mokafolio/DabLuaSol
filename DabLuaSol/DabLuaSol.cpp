@@ -1,3 +1,4 @@
+#include <StickLuaSol/StickLuaSol.hpp>
 #include <DabLuaSol/DabLuaSol.hpp>
 #include <Stick/Path.hpp>
 
