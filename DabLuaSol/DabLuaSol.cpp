@@ -242,6 +242,9 @@ void registerDab(sol::state_view _lua, sol::table _tbl)
                                    "endFrame",
                                    &RenderDevice::endFrame);
 
+    tbl.set_function("createRenderDevice", createRenderDevice);
+    tbl.set_function("destroyRenderDevice", destroyRenderDevice);
+
     tbl.new_usertype<Program>("Program", "new", sol::no_constructor);
 
     tbl.new_usertype<Pipeline>("Pipeline",
