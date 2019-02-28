@@ -1,0 +1,6 @@
+[submodule "subprojects/Dab"]
+	path = subprojects/Dab
+	url = https://github.com/mokafolio/Dab.git
+[submodule "subprojects/Stick"]
+	path = subprojects/Stick
+	url = https://github.com/mokafolio/Stick.git
