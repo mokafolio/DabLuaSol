@@ -1,8 +1,28 @@
-#include <Dab/Dab.hpp>
 #include <DabLuaSol/DabLuaSol.hpp>
+#include <Stick/Path.hpp>
 
 namespace dabLuaSol
 {
+
+sol::table ensureNamespaceTable(sol::state_view _lua, sol::table _startTbl, const stick::String & _namespace)
+{
+    using namespace stick;
+
+    sol::table tbl = _startTbl;
+    if (!_namespace.isEmpty())
+    {
+        auto tokens = path::segments(_namespace, '.');
+        for (const String & token : tokens)
+            tbl = tbl[token.cString()] = tbl.get_or(token.cString(), _lua.create_table());
+    }
+    return tbl;
+}
+
+
+void registerDab(sol::state_view _lua, const stick::String & _namespace)
+{
+    registerDab(_lua, ensureNamespaceTable(_lua, _lua.globals(), _namespace));
+}
 
 void registerDab(sol::state_view _lua, sol::table _tbl)
 {
