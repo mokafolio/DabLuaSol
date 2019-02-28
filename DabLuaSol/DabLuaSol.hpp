@@ -1,12 +1,14 @@
 #ifndef DABLUASOL_DABLUASOL_HPP
 #define DABLUASOL_DABLUASOL_HPP
 
-#include <Stick/Platform.hpp>
+#include <Stick/String.hpp>
+#include <Dab/Dab.hpp>
 #include <sol/sol.hpp>
 
 namespace dabLuaSol
 {
 
+STICK_API void registerDab(sol::state_view _lua, const stick::String & _namespace = "");
 STICK_API void registerDab(sol::state_view _lua, sol::table _tbl);
 
 } // namespace dabLuaSol
