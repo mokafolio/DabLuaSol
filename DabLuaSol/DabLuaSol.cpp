@@ -1,11 +1,13 @@
-#include <StickLuaSol/StickLuaSol.hpp>
 #include <DabLuaSol/DabLuaSol.hpp>
 #include <Stick/Path.hpp>
+#include <StickLuaSol/StickLuaSol.hpp>
 
 namespace dabLuaSol
 {
 
-sol::table ensureNamespaceTable(sol::state_view _lua, sol::table _startTbl, const stick::String & _namespace)
+sol::table ensureNamespaceTable(sol::state_view _lua,
+                                sol::table _startTbl,
+                                const stick::String & _namespace)
 {
     using namespace stick;
 
@@ -18,7 +20,6 @@ sol::table ensureNamespaceTable(sol::state_view _lua, sol::table _startTbl, cons
     }
     return tbl;
 }
-
 
 void registerDab(sol::state_view _lua, const stick::String & _namespace)
 {
@@ -263,10 +264,10 @@ void registerDab(sol::state_view _lua, sol::table _tbl)
                                    "endFrame",
                                    &RenderDevice::endFrame);
 
-    // tbl.set_function("createRenderDevice", [](){
-    //     return createRenderDevice();
-    // });
-    tbl.set_function("createRenderDevice", &createRenderDevice);
+    //@NOTE: I think this is a bug in sol2. we need to wrap this in a lambda so that the custom
+    // stick::Result pusher in StickLuaSol is properly utilized across library boundaries. Oddly
+    // enough this only appears to be an issue for free functions.
+    tbl.set_function("createRenderDevice", []() { return createRenderDevice(); });
     tbl.set_function("destroyRenderDevice", destroyRenderDevice);
 
     tbl.new_usertype<Program>("Program", "new", sol::no_constructor);
