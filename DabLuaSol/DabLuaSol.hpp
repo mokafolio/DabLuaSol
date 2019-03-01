@@ -229,7 +229,14 @@ STICK_API void registerDab(sol::state_view _lua, sol::table _tbl)
                                    "destroyIndexBuffer",
                                    &RenderDevice::destroyIndexBuffer,
                                    "createMesh",
-                                   &RenderDevice::createMesh,
+                                   [](RenderDevice * _self, sol::table _tbl)
+                                   {
+                                    DynamicArray<VertexBuffer*> buffers;
+                                    DynamicArray<VertexLayout> layouts;
+
+                                    buffers.reserve(_tbl.size());
+                                    layouts.reserve(_tbl.size());
+                                   },
                                    "destroyMesh",
                                    &RenderDevice::destroyMesh,
                                    "createTexture",
