@@ -229,13 +229,37 @@ STICK_API void registerDab(sol::state_view _lua, sol::table _tbl)
                                    "destroyIndexBuffer",
                                    &RenderDevice::destroyIndexBuffer,
                                    "createMesh",
-                                   [](RenderDevice * _self, sol::table _tbl)
-                                   {
-                                    DynamicArray<VertexBuffer*> buffers;
-                                    DynamicArray<VertexLayout> layouts;
+                                   [](RenderDevice * _self, sol::table _tbl) {
+                                       //@TODO: proper allocators
+                                       stick::DynamicArray<VertexBuffer *> buffers;
+                                       stick::DynamicArray<VertexLayout> layouts;
 
-                                    buffers.reserve(_tbl.size());
-                                    layouts.reserve(_tbl.size());
+                                       Size count = _tbl.size();
+                                       buffers.reserve(count);
+                                       layouts.reserve(count);
+
+                                       for (auto & kv : _tbl)
+                                       {
+                                           sol::table el = kv.second.as<sol::table>();
+                                           dab::VertexBuffer * vb = el[1];
+                                           sol::table tbl2 = el[2];
+
+                                           dab::VertexElementArray elements;
+                                           elements.reserve(tbl2.size());
+
+                                           for (auto & kv2 : tbl2)
+                                           {
+                                               sol::table el2 = kv2.second.as<sol::table>();
+                                               dab::DataType dt = el2[1];
+                                               stick::UInt32 ec = el2[2];
+                                               elements.append((dab::VertexElement){ dt, ec });
+                                           }
+                                           buffers.append(vb);
+                                           layouts.append(VertexLayout(std::move(elements)));
+                                       }
+
+                                       return _self->createMesh(
+                                           &buffers[0], &layouts[0], buffers.count());
                                    },
                                    "destroyMesh",
                                    &RenderDevice::destroyMesh,
@@ -364,36 +388,266 @@ namespace sol
 {
 namespace stack
 {
-template<>
-struct checker<dab::VertexLayout>
+// template <>
+// struct checker<dab::VertexLayout>
+// {
+//     template <typename Handler>
+//     static bool check(lua_State * _L, int _index, Handler && _handler, record & _tracking)
+//     {
+//         _tracking.use(1);
+//         return lua_istable(_L, lua_absindex(_L, _index));
+//     }
+// };
+
+// template <>
+// struct getter<dab::VertexLayout>
+// {
+//     static dab::VertexLayout get(lua_State * _L, int _index, record & _tracking)
+//     {
+//         int aidx = lua_absindex(_L, _index);
+//         sol::table tbl = stack::get<sol::table>(_L, aidx, _tracking);
+//         dab::VertexElementArray elements;
+//         elements.reserve(tbl.size());
+//         for (auto & kv : tbl)
+//         {
+//             sol::table el = kv.second.as<sol::table>();
+//             dab::DataType dt = el[1];
+//             stick::UInt32 ec = el[2];
+//             elements.append((dab::VertexElement){ dt, ec });
+//         }
+//         return dab::VertexLayout(std::move(elements));
+//     }
+// };
+
+template <>
+struct checker<dab::RenderBufferSettings>
 {
     template <typename Handler>
     static bool check(lua_State * _L, int _index, Handler && _handler, record & _tracking)
     {
+        //@TODO: do we need to check if all fields are present in the table??
         _tracking.use(1);
         return lua_istable(_L, lua_absindex(_L, _index));
     }
 };
 
-template<>
-struct getter<dab::VertexLayout>
+template <>
+struct getter<dab::RenderBufferSettings>
 {
-    static dab::VertexLayout get(lua_State * _L, int _index, record & _tracking)
+    static dab::RenderBufferSettings get(lua_State * _L, int _index, record & _tracking)
     {
         int aidx = lua_absindex(_L, _index);
         sol::table tbl = stack::get<sol::table>(_L, aidx, _tracking);
-        dab::VertexElementArray elements;
-        elements.reserve(tbl.size());
-        for(auto & kv : tbl)
+        stick::Float32 width = tbl["width"];
+        stick::Float32 height = tbl["height"];
+        stick::UInt32 sampleCount = tbl["sampleCount"]; //@TODO make this optional
+
+        dab::RenderBufferSettings settings;
+        settings.width = width;
+        settings.height = height;
+        settings.sampleCount = sampleCount;
+
+        sol::table renderTargets = tbl["renderTargets"];
+        settings.renderTargets.reserve(renderTargets.size());
+        for (auto & kv : renderTargets)
         {
-            sol::table el = kv.second.as<sol::table>();
-            dab::DataType dt = el[1];
-            stick::UInt32 ec = el[2];
-            elements.append((dab::VertexElement){dt, ec});
+            sol::table v = kv.second.as<sol::table>();
+            dab::TextureFormat fmt = v[1];
+            stick::UInt32 mipMapLevelCount = 0;
+            if (v.size() > 1)
+                mipMapLevelCount = v[2];
+            settings.renderTargets.append(
+                (dab::RenderBufferSettings::RenderTarget){ fmt, mipMapLevelCount });
         }
-        return dab::VertexLayout(std::move(elements));
+
+        return settings;
     }
 };
+
+template <>
+struct checker<dab::PipelineSettings>
+{
+    template <typename Handler>
+    static bool check(lua_State * _L, int _index, Handler && _handler, record & _tracking)
+    {
+        //@TODO: do we need to check if all fields are present in the table??
+        _tracking.use(1);
+        return lua_istable(_L, lua_absindex(_L, _index));
+    }
+};
+
+template <>
+struct getter<dab::PipelineSettings>
+{
+    static dab::PipelineSettings get(lua_State * _L, int _index, record & _tracking)
+    {
+        int aidx = lua_absindex(_L, _index);
+        sol::table tbl = stack::get<sol::table>(_L, aidx, _tracking);
+        dab::PipelineSettings ret;
+
+        //@TODO: finish this once the render state stuff is finished in Dab
+        sol::optional<dab::Program *> oProg = tbl["program"];
+        if (oProg)
+            ret.program = oProg.value();
+
+        sol::optional<sol::table> oVp = tbl["viewport"];
+        if (oVp)
+        {
+            ret.viewport = {
+                oVp.value()["x"], oVp.value()["y"], oVp.value()["width"], oVp.value()["height"]
+            };
+        }
+
+        sol::optional<sol::table> osciss = tbl["scissor"];
+        if (osciss)
+        {
+            ret.scissor = (dab::Rect){ osciss.value()["x"],
+                                       osciss.value()["y"],
+                                       osciss.value()["width"],
+                                       osciss.value()["height"] };
+        }
+
+        sol::optional<bool> oms = tbl["multisample"];
+        if (oms)
+            ret.multisample = oms.value();
+
+        sol::optional<bool> odt = tbl["depthTest"];
+        if (odt)
+            ret.depthTest = odt.value();
+
+        sol::optional<bool> odw = tbl["depthWrite"];
+        if (odw)
+            ret.depthWrite = odw.value();
+
+        sol::optional<dab::CompareFunction> odf = tbl["depthFunction"];
+        if (odf)
+            ret.depthFunction = odf.value();
+
+        sol::optional<sol::table> ocws = tbl["colorWriteSettings"];
+        if (ocws)
+        {
+            ret.colorWriteSettings = {
+                ocws.value()["r"], ocws.value()["g"], ocws.value()["b"], ocws.value()["a"]
+            };
+        }
+
+        sol::optional<dab::FaceDirection> ofd = tbl["faceDirection"];
+        if (ofd)
+            ret.faceDirection = ofd.value();
+
+        sol::optional<dab::FaceType> ocf = tbl["cullFace"];
+        if (ocf)
+            ret.cullFace = ocf.value();
+
+        return ret;
+    }
+};
+
+template <>
+struct checker<dab::SamplerSettings>
+{
+    template <typename Handler>
+    static bool check(lua_State * _L, int _index, Handler && _handler, record & _tracking)
+    {
+        //@TODO: do we need to check if all fields are present in the table??
+        _tracking.use(1);
+        return lua_istable(_L, lua_absindex(_L, _index));
+    }
+};
+
+template <>
+struct getter<dab::SamplerSettings>
+{
+    static dab::SamplerSettings get(lua_State * _L, int _index, record & _tracking)
+    {
+        int aidx = lua_absindex(_L, _index);
+        sol::table tbl = stack::get<sol::table>(_L, aidx, _tracking);
+
+        dab::SamplerSettings ret;
+
+        sol::optional<dab::TextureWrap> oWrap = tbl["wrap"];
+        if (oWrap)
+        {
+            ret.wrapS = oWrap.value();
+            ret.wrapT = ret.wrapS;
+            ret.wrapR = ret.wrapS;
+        }
+        else
+        {
+            sol::optional<dab::TextureWrap> oWrapS = tbl["wrapS"];
+            if (oWrapS)
+                ret.wrapS = oWrapS.value();
+            sol::optional<dab::TextureWrap> oWrapT = tbl["wrapT"];
+            if (oWrapT)
+                ret.wrapT = oWrapT.value();
+            sol::optional<dab::TextureWrap> oWrapR = tbl["wrapR"];
+            if (oWrapR)
+                ret.wrapR = oWrapR.value();
+        }
+        sol::optional<dab::TextureFiltering> of = tbl["filtering"];
+        if (of)
+            ret.filtering = of.value();
+
+        sol::optional<bool> omm = tbl["mipMapping"];
+        if (omm)
+            ret.mipMapping = omm.value();
+
+        return ret;
+    }
+};
+
+template <>
+struct checker<dab::RenderPassSettings>
+{
+    template <typename Handler>
+    static bool check(lua_State * _L, int _index, Handler && _handler, record & _tracking)
+    {
+        //@TODO: do we need to check if all fields are present in the table??
+        _tracking.use(1);
+        return lua_istable(_L, lua_absindex(_L, _index));
+    }
+};
+
+template <>
+struct getter<dab::RenderPassSettings>
+{
+    static dab::RenderPassSettings get(lua_State * _L, int _index, record & _tracking)
+    {
+        int aidx = lua_absindex(_L, _index);
+        sol::table tbl = stack::get<sol::table>(_L, aidx, _tracking);
+
+        dab::RenderPassSettings ret;
+
+        sol::optional<dab::RenderBuffer *> orb = tbl["renderBuffer"];
+        if (orb)
+            ret.renderBuffer = orb.value();
+
+        sol::optional<sol::table> occ = tbl["clear"];
+        if (occ)
+        {
+            dab::ClearSettings set;
+
+            sol::optional<sol::table> ocol = occ.value()["color"];
+            if (ocol)
+                set.color = (dab::ClearColor){
+                    ocol.value()[1], ocol.value()[2], ocol.value()[3], ocol.value()[4]
+                };
+
+            sol::optional<stick::Float64> odepth = occ.value()["depth"];
+            if (odepth)
+                set.depth = odepth.value();
+
+            sol::optional<stick::Int32> ostencil = occ.value()["stencil"];
+            if (ostencil)
+                set.stencil = ostencil.value();
+
+            ret.clear = set;
+        }
+
+        return ret;
+    }
+};
+
 } // namespace stack
 } // namespace sol
 
