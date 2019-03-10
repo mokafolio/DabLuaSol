@@ -282,7 +282,9 @@ STICK_API void registerDab(sol::state_view _lua, sol::table _tbl)
                                    "beginFrame",
                                    &RenderDevice::beginFrame,
                                    "endFrame",
-                                   &RenderDevice::endFrame);
+                                   &RenderDevice::endFrame,
+                                   "readPixels",
+                                   &RenderDevice::readPixels);
 
     //@NOTE: I think this is a bug in sol2. we need to wrap this in a lambda so that the custom
     // stick::Result pusher in StickLuaSol is properly utilized across library boundaries. Oddly
