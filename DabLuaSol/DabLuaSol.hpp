@@ -370,12 +370,30 @@ STICK_API void registerDab(sol::state_view _lua, sol::table _tbl)
                                    "sampleCount",
                                    &RenderBuffer::sampleCount);
 
+    virtual void drawMesh(const Mesh * _mesh,
+                          const Pipeline * _pipeline,
+                          UInt32 _vertexOffset,
+                          UInt32 _vertexCount,
+                          VertexDrawMode _drawMode) = 0;
+
+    virtual void drawMesh(const Mesh * _mesh,
+                          const Pipeline * _pipeline,
+                          UInt32 _vertexOffset,
+                          UInt32 _vertexCount,
+                          UInt32 _baseVertex,
+                          VertexDrawMode _drawMode) = 0;
+
     tbl.new_usertype<RenderPass>(
         "RenderPass",
-        // "new",
-        // sol::no_constructor,
+        "new",
+        sol::no_constructor,
         "drawMesh",
-        &RenderPass::drawMesh,
+        sol::overload(
+            (void (RenderPass::*)(const Mesh *, const Pipeline *, UInt32, UInt32, VertexDrawMode)) &
+                RenderPass::drawMesh,
+            (void (RenderPass::*)(
+                const Mesh *, const Pipeline *, UInt32, UInt32, UInt32, VertexDrawMode)) &
+                RenderPass::drawMesh),
         "drawCustom",
         [](RenderPass * _self, sol::function _fn) { _self->drawCustom([_fn]() { return _fn(); }); },
         "setViewport",
