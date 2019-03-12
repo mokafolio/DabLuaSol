@@ -370,6 +370,7 @@ STICK_API void registerDab(sol::state_view _lua, sol::table _tbl)
                                    "sampleCount",
                                    &RenderBuffer::sampleCount);
 
+
     tbl.new_usertype<RenderPass>(
         "RenderPass",
         "new",
