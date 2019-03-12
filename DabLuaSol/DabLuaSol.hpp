@@ -372,8 +372,8 @@ STICK_API void registerDab(sol::state_view _lua, sol::table _tbl)
 
     tbl.new_usertype<RenderPass>(
         "RenderPass",
-        "new",
-        sol::no_constructor,
+        // "new",
+        // sol::no_constructor,
         "drawMesh",
         &RenderPass::drawMesh,
         "drawCustom",
