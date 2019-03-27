@@ -279,10 +279,6 @@ STICK_API void registerDab(sol::state_view _lua, sol::table _tbl)
                                    &RenderDevice::beginPass,
                                    "endPass",
                                    &RenderDevice::endPass,
-                                   "beginFrame",
-                                   &RenderDevice::beginFrame,
-                                   "endFrame",
-                                   &RenderDevice::endFrame,
                                    "readPixels",
                                    &RenderDevice::readPixels);
 
