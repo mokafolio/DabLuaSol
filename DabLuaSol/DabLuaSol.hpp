@@ -10,6 +10,7 @@ namespace dabLuaSol
 STICK_API void registerDab(sol::state_view _lua, const stick::String & _namespace = "");
 STICK_API void registerDab(sol::state_view _lua, sol::table _tbl);
 
+#ifdef DABLUASOL_IMPLEMENTATION
 STICK_API void registerDab(sol::state_view _lua, const stick::String & _namespace)
 {
     registerDab(_lua, stickLuaSol::ensureNamespaceTable(_lua, _lua.globals(), _namespace));
@@ -366,7 +367,6 @@ STICK_API void registerDab(sol::state_view _lua, sol::table _tbl)
                                    "sampleCount",
                                    &RenderBuffer::sampleCount);
 
-
     tbl.new_usertype<RenderPass>(
         "RenderPass",
         "new",
@@ -375,7 +375,8 @@ STICK_API void registerDab(sol::state_view _lua, sol::table _tbl)
         sol::overload(
             (void (RenderPass::*)(const Mesh *, const Pipeline *, UInt32, UInt32, VertexDrawMode)) &
                 RenderPass::drawMesh,
-            (void (RenderPass::*)(const Mesh *, const Pipeline *, UInt32, UInt32, UInt32, VertexDrawMode)) &
+            (void (RenderPass::*)(
+                const Mesh *, const Pipeline *, UInt32, UInt32, UInt32, VertexDrawMode)) &
                 RenderPass::drawMesh),
         "drawCustom",
         [](RenderPass * _self, sol::function _fn) { _self->drawCustom([_fn]() { return _fn(); }); },
@@ -384,6 +385,8 @@ STICK_API void registerDab(sol::state_view _lua, sol::table _tbl)
         "clearBuffers",
         &RenderPass::clearBuffers);
 }
+
+#endif // DABLUASOL_IMPLEMENTATION
 
 } // namespace dabLuaSol
 
